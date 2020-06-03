@@ -265,11 +265,12 @@ void CollectionShardingState::clearMigrationSourceManager(OperationContext* opCt
     _sourceMgr = nullptr;
 }
 
-void CollectionShardingState::checkShardVersionOrThrow(OperationContext* opCtx) {
+void void CollectionShardingState::checkShardVersionOrThrow(OperationContext* txn,
+                                                       bool waitForMigrationCommit) {
     std::string errmsg;
     ChunkVersion received;
     ChunkVersion wanted;
-    if (!_checkShardVersionOk(opCtx, &errmsg, &received, &wanted)) {
+    if (!_checkShardVersionOk(opCtx, &errmsg, &received, &wanted, waitForMigrationCommit)) {
         throw StaleConfigException(
             _nss.ns(), str::stream() << "shard version not ok: " << errmsg, received, wanted);
     }
@@ -365,8 +366,8 @@ void CollectionShardingState::onInsertOp(OperationContext* opCtx,
             _incrementChunkOnInsertOrUpdate(opCtx, insertedDoc, insertedDoc.objsize());
         }
     }
-
-    checkShardVersionOrThrow(opCtx);
+    
+    checkShardVersionOrThrow(txn);
 
     if (_sourceMgr) {
         _sourceMgr->getCloner()->onInsertOp(opCtx, insertedDoc, opTime);
@@ -391,7 +392,7 @@ void CollectionShardingState::onUpdateOp(OperationContext* opCtx,
         }
     }
 
-    checkShardVersionOrThrow(opCtx);
+    checkShardVersionOrThrow(txn);
 
     if (_sourceMgr) {
         _sourceMgr->getCloner()->onUpdateOp(opCtx, updatedDoc, opTime, prePostImageOpTime);
@@ -401,6 +402,12 @@ void CollectionShardingState::onUpdateOp(OperationContext* opCtx,
 auto CollectionShardingState::makeDeleteState(BSONObj const& doc) -> DeleteState {
     return {getMetadata().extractDocumentKey(doc).getOwned(),
             _sourceMgr && _sourceMgr->getCloner()->isDocumentInMigratingChunk(doc)};
+}
+
+auto CollectionShardingState::makeDeleteState(BSONObj const& doc, bool fromMigrate) -> DeleteState {
+
+    return {getMetadata().extractDocumentKey(doc).getOwned(),
+            _sourceMgr && _sourceMgr->getCloner()->isDocumentInMigratingChunk(doc) && fromMigrate};
 }
 
 void CollectionShardingState::onDeleteOp(OperationContext* opCtx,
@@ -444,7 +451,7 @@ void CollectionShardingState::onDeleteOp(OperationContext* opCtx,
         }
     }
 
-    checkShardVersionOrThrow(opCtx);
+    checkShardVersionOrThrow(txn);
 
     if (_sourceMgr && deleteState.isMigrating) {
         _sourceMgr->getCloner()->onDeleteOp(opCtx, deleteState.documentKey, opTime, preImageOpTime);
@@ -549,7 +556,8 @@ void CollectionShardingState::_onConfigDeleteInvalidateCachedMetadataAndNotify(
 bool CollectionShardingState::_checkShardVersionOk(OperationContext* opCtx,
                                                    std::string* errmsg,
                                                    ChunkVersion* expectedShardVersion,
-                                                   ChunkVersion* actualShardVersion) {
+                                                   ChunkVersion* actualShardVersion,
+                                                   bool waitForMigrationCommit) {
     auto* const client = opCtx->getClient();
 
     auto& oss = OperationShardingState::get(opCtx);
@@ -582,7 +590,7 @@ bool CollectionShardingState::_checkShardVersionOk(OperationContext* opCtx,
     auto metadata = getMetadata();
     *actualShardVersion = metadata ? metadata->getShardVersion() : ChunkVersion::UNSHARDED();
 
-    if (_sourceMgr) {
+    if (waitForMigrationCommit && _sourceMgr) {
         const bool isReader = !opCtx->lockState()->isWriteLocked();
 
         auto criticalSectionSignal = _sourceMgr->getMigrationCriticalSectionSignal(isReader);

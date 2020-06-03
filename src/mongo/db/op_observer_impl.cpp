@@ -306,6 +306,23 @@ void OpObserverImpl::onCreateIndex(OperationContext* opCtx,
     }
 }
 
+void OpObserverImpl::aboutToInserts(OperationContext* txn,
+                                    const NamespaceString& nss,
+                                    std::vector<BSONObj>::const_iterator begin,
+                                    std::vector<BSONObj>::const_iterator end,
+                                    bool fromMigrate) {
+    if (fromMigrate) {
+        return;
+    }
+
+    auto css = CollectionShardingState::get(txn, nss.ns());
+    for (auto it = begin; it != end; it++) {
+        if (css->isDocumentInMigratingChunk(txn, *it)) {
+            css->checkShardVersionOrThrow(txn, true);
+        }
+    }
+}
+
 void OpObserverImpl::onInserts(OperationContext* opCtx,
                                const NamespaceString& nss,
                                OptionalCollectionUUID uuid,
@@ -355,6 +372,22 @@ void OpObserverImpl::onInserts(OperationContext* opCtx,
 
     onWriteOpCompleted(opCtx, nss, session, stmtIdsWritten, lastOpTime, lastWriteDate);
 }
+
+void OpObserverImpl::aboutToUpdate(OperationContext* txn,
+                                   const NamespaceString& ns,
+                                   const BSONObj& doc,
+                                   bool fromMigrate) {
+     if (fromMigrate) {
+        return;
+    }
+
+    auto css = CollectionShardingState::get(txn, ns.ns());
+    if (css->isDocumentInMigratingChunk(txn, doc)) {
+        css->checkShardVersionOrThrow(txn, true);
+    }
+}
+
+
 
 void OpObserverImpl::onUpdate(OperationContext* opCtx, const OplogUpdateEntryArgs& args) {
     MONGO_FAIL_POINT_BLOCK(failCollectionUpdates, extraData) {
@@ -415,9 +448,16 @@ void OpObserverImpl::onUpdate(OperationContext* opCtx, const OplogUpdateEntryArg
 
 auto OpObserverImpl::aboutToDelete(OperationContext* opCtx,
                                    NamespaceString const& nss,
-                                   BSONObj const& doc) -> CollectionShardingState::DeleteState {
+                                   BSONObj const& doc,
+                                   bool fromMigrate) -> CollectionShardingState::DeleteState {
     auto* css = CollectionShardingState::get(opCtx, nss.ns());
-    return css->makeDeleteState(doc);
+
+    if (!fromMigrate && css->isDocumentInMigratingChunk(opCtx, doc)) {
+        css->checkShardVersionOrThrow(opCtx, true);
+    }
+
+    return css->makeDeleteState(doc, fromMigrate);
+
 }
 
 void OpObserverImpl::onDelete(OperationContext* opCtx,

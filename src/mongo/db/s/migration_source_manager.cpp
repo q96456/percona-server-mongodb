@@ -435,10 +435,10 @@ Status MigrationSourceManager::commitChunkMetadataOnConfig(OperationContext* opC
 
     // Read operations must begin to wait on the critical section just before we send the commit
     // operation to the config server
-    {
-        AutoGetCollection autoColl(opCtx, getNss(), MODE_IX, MODE_X);
-        _readsShouldWaitOnCritSec = true;
-    }
+    // {
+    //     AutoGetCollection autoColl(opCtx, getNss(), MODE_IX, MODE_X);
+    //     _readsShouldWaitOnCritSec = true;
+    // }
 
     Timer t;
 
@@ -782,9 +782,9 @@ std::shared_ptr<Notification<void>> MigrationSourceManager::getMigrationCritical
         return _critSecSignal;
     }
 
-    if (_readsShouldWaitOnCritSec) {
-        return _critSecSignal;
-    }
+    // if (_readsShouldWaitOnCritSec) {
+    //     return _critSecSignal;
+    // }
 
     return nullptr;
 }

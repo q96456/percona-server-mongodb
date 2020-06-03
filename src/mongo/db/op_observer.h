@@ -45,7 +45,7 @@ struct OplogSlot;
 
 namespace repl {
 class OpTime;
-}  // repl
+}  // namespace repl
 
 /**
  * Holds document update information used in logging.
@@ -96,16 +96,28 @@ public:
                                OptionalCollectionUUID uuid,
                                BSONObj indexDoc,
                                bool fromMigrate) = 0;
+
+    virtual void aboutToInserts(OperationContext* txn,
+                                const NamespaceString& ns,
+                                std::vector<BSONObj>::const_iterator begin,
+                                std::vector<BSONObj>::const_iterator end,
+                                bool fromMigrate) = 0;
     virtual void onInserts(OperationContext* opCtx,
                            const NamespaceString& nss,
                            OptionalCollectionUUID uuid,
                            std::vector<InsertStatement>::const_iterator begin,
                            std::vector<InsertStatement>::const_iterator end,
                            bool fromMigrate) = 0;
+
+    virtual void aboutToUpdate(OperationContext* txn,
+                               const NamespaceString& ns,
+                               const BSONObj& doc,
+                               bool fromMigrate) = 0;
     virtual void onUpdate(OperationContext* opCtx, const OplogUpdateEntryArgs& args) = 0;
     virtual CollectionShardingState::DeleteState aboutToDelete(OperationContext* opCtx,
                                                                const NamespaceString& nss,
-                                                               const BSONObj& doc) = 0;
+                                                               const BSONObj& doc,
+                                                               bool fromMigrate) = 0;
     /**
      * Handles logging before document is deleted.
      *

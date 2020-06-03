@@ -135,9 +135,9 @@ std::unique_ptr<CollatorInterface> parseCollation(OperationContext* opCtx,
 }
 }  // namespace
 
-using std::unique_ptr;
 using std::endl;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 using logger::LogComponent;
@@ -204,7 +204,7 @@ void CollectionImpl::refreshUUID(OperationContext* opCtx) {
     // refreshUUID may be called from outside a WriteUnitOfWork. In such cases, there is no
     // change to any on disk data, so no rollback handler is needed.
     if (opCtx->lockState()->inAWriteUnitOfWork())
-        opCtx->recoveryUnit()->onRollback([ this, oldUUID = _uuid ] { this->_uuid = oldUUID; });
+        opCtx->recoveryUnit()->onRollback([this, oldUUID = _uuid] { this->_uuid = oldUUID; });
     _uuid = options.uuid;
 }
 
@@ -284,17 +284,14 @@ StatusWithMatchExpression CollectionImpl::parseValidator(
     if (ns().isSystem() && !ns().isDropPendingNamespace()) {
         return {ErrorCodes::InvalidOptions,
                 str::stream() << "Document validators not allowed on system collection "
-                              << ns().ns()
-                              << (_uuid ? " with UUID " + _uuid->toString() : "")};
+                              << ns().ns() << (_uuid ? " with UUID " + _uuid->toString() : "")};
     }
 
     if (ns().isOnInternalDb()) {
         return {ErrorCodes::InvalidOptions,
                 str::stream() << "Document validators are not allowed on collection " << ns().ns()
-                              << (_uuid ? " with UUID " + _uuid->toString() : "")
-                              << " in the "
-                              << ns().db()
-                              << " internal database"};
+                              << (_uuid ? " with UUID " + _uuid->toString() : "") << " in the "
+                              << ns().db() << " internal database"};
     }
 
     boost::intrusive_ptr<ExpressionContext> expCtx(new ExpressionContext(opCtx, _collator.get()));
@@ -368,6 +365,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
         if (!status.isOK())
             return status;
     }
+    getGlobalServiceContext()->getOpObserver()->aboutToInserts(txn, ns(), begin, end, fromMigrate);
 
     const SnapshotId sid = opCtx->recoveryUnit()->getSnapshotId();
 
@@ -412,13 +410,20 @@ Status CollectionImpl::insertDocument(OperationContext* opCtx,
         }
     }
 
+    dassert(txn->lockState()->isCollectionLockedForMode(ns().toString(), MODE_IX));
+
     {
         auto status = checkValidation(opCtx, doc);
         if (!status.isOK())
             return status;
     }
 
-    dassert(opCtx->lockState()->isCollectionLockedForMode(ns().toString(), MODE_IX));
+    vector<BSONObj> docs;
+    docs.push_back(doc);
+
+    getGlobalServiceContext()->getOpObserver()->aboutToInserts(
+        txn, ns(), docs.begin(), docs.end(), false);
+
 
     // TODO SERVER-30638: using timestamp 0 for these inserts, which are non-oplog so we don't yet
     // care about their correct timestamps.
@@ -562,8 +567,10 @@ void CollectionImpl::deleteDocument(OperationContext* opCtx,
 
     Snapshotted<BSONObj> doc = docFor(opCtx, loc);
 
+    // auto deleteState =
+    //     getGlobalServiceContext()->getOpObserver()->aboutToDelete(opCtx, ns(), doc.value());
     auto deleteState =
-        getGlobalServiceContext()->getOpObserver()->aboutToDelete(opCtx, ns(), doc.value());
+        getGlobalServiceContext()->getOpObserver()->aboutToDelete(opCtx, ns(), doc.value(), fromMigrate);
 
     boost::optional<BSONObj> deletedDoc;
     if (storeDeletedDoc == Collection::StoreDeletedDoc::On) {
@@ -616,6 +623,8 @@ RecordId CollectionImpl::updateDocument(OperationContext* opCtx,
     invariant(oldDoc.snapshotId() == opCtx->recoveryUnit()->getSnapshotId());
     invariant(newDoc.isOwned());
 
+    //getGlobalServiceContext()->getOpObserver()->aboutToUpdate(txn, *args);
+
     if (_needCappedLock) {
         // X-lock the metadata resource for this capped collection until the end of the WUOW. This
         // prevents the primary from executing with more concurrency than secondaries.
@@ -641,10 +650,10 @@ RecordId CollectionImpl::updateDocument(OperationContext* opCtx,
     if (_recordStore->isCapped() && oldSize != newDoc.objsize())
         uasserted(ErrorCodes::CannotGrowDocumentInCappedNamespace,
                   str::stream() << "Cannot change the size of a document in a capped collection: "
-                                << oldSize
-                                << " != "
-                                << newDoc.objsize());
+                                << oldSize << " != " << newDoc.objsize());
 
+     getGlobalServiceContext()->getOpObserver()->aboutToUpdate(
+        opCtx, ns(), newDoc, args->fromMigrate);
     // At the end of this step, we will have a map of UpdateTickets, one per index, which
     // represent the index updates needed to be done, based on the changes between oldDoc and
     // newDoc.
@@ -788,6 +797,8 @@ StatusWith<RecordData> CollectionImpl::updateDocumentWithDamages(
     invariant(oldRec.snapshotId() == opCtx->recoveryUnit()->getSnapshotId());
     invariant(updateWithDamagesSupported());
 
+    //getGlobalServiceContext()->getOpObserver()->aboutToUpdate(txn, *args);
+
     // Broadcast the mutation so that query results stay correct.
     _cursorManager.invalidateDocument(opCtx, loc, INVALIDATION_MUTATION);
 
@@ -924,11 +935,9 @@ Status CollectionImpl::setValidator(OperationContext* opCtx, BSONObj validatorDo
 
     _details->updateValidator(opCtx, validatorDoc, getValidationLevel(), getValidationAction());
 
-    opCtx->recoveryUnit()->onRollback([
-        this,
-        oldValidator = std::move(_validator),
-        oldValidatorDoc = std::move(_validatorDoc)
-    ]() mutable {
+    opCtx->recoveryUnit()->onRollback([this,
+                                       oldValidator = std::move(_validator),
+                                       oldValidatorDoc = std::move(_validatorDoc)]() mutable {
         this->_validator = std::move(oldValidator);
         this->_validatorDoc = std::move(oldValidatorDoc);
     });
@@ -1031,13 +1040,11 @@ Status CollectionImpl::updateValidator(OperationContext* opCtx,
                                        StringData newAction) {
     invariant(opCtx->lockState()->isCollectionLockedForMode(ns().toString(), MODE_X));
 
-    opCtx->recoveryUnit()->onRollback([
-        this,
-        oldValidator = std::move(_validator),
-        oldValidatorDoc = std::move(_validatorDoc),
-        oldValidationLevel = _validationLevel,
-        oldValidationAction = _validationAction
-    ]() mutable {
+    opCtx->recoveryUnit()->onRollback([this,
+                                       oldValidator = std::move(_validator),
+                                       oldValidatorDoc = std::move(_validatorDoc),
+                                       oldValidationLevel = _validationLevel,
+                                       oldValidationAction = _validationAction]() mutable {
         this->_validator = std::move(oldValidator);
         this->_validatorDoc = std::move(oldValidatorDoc);
         this->_validationLevel = oldValidationLevel;
@@ -1231,10 +1238,8 @@ void addErrorIfUnequal(T stored, T cached, StringData name, ValidateResults* res
     if (stored != cached) {
         results->valid = false;
         results->errors.push_back(str::stream() << "stored value for " << name
-                                                << " does not match cached value: "
-                                                << stored
-                                                << " != "
-                                                << cached);
+                                                << " does not match cached value: " << stored
+                                                << " != " << cached);
     }
 }
 
@@ -1326,8 +1331,8 @@ Status CollectionImpl::validate(OperationContext* opCtx,
             opCtx, &_indexCatalog, &indexNsResultsMap, &keysPerIndex, level, results, output);
 
         if (!results->valid) {
-            log(LogComponent::kIndex) << "validating collection " << ns().toString() << " failed"
-                                      << endl;
+            log(LogComponent::kIndex)
+                << "validating collection " << ns().toString() << " failed" << endl;
         } else {
             log(LogComponent::kIndex) << "validated collection " << ns().toString() << endl;
         }

@@ -82,6 +82,7 @@ public:
     };
 
     DeleteState makeDeleteState(BSONObj const& doc);
+    DeleteState makeDeleteState(BSONObj const& doc, bool fromMigrate);
 
     /**
      * Obtains the sharding state for the specified collection. If it does not exist, it will be
@@ -187,7 +188,7 @@ public:
      * response is constructed, this function should be the only means of checking for shard version
      * match.
      */
-    void checkShardVersionOrThrow(OperationContext* opCtx);
+    void checkShardVersionOrThrow(OperationContext* opCtx, bool waitForMigrationCommit = false);
 
     /**
      * Returns whether this collection is sharded. Valid only if mongoD is primary.
@@ -299,7 +300,8 @@ private:
     bool _checkShardVersionOk(OperationContext* opCtx,
                               std::string* errmsg,
                               ChunkVersion* expectedShardVersion,
-                              ChunkVersion* actualShardVersion);
+                              ChunkVersion* actualShardVersion,
+                              bool waitForMigrationCommit);
 
     /**
      * If the collection is sharded, finds the chunk that contains the specified document, and
