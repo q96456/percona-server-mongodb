@@ -344,6 +344,18 @@ boost::optional<ChunkRange> CollectionShardingState::getNextOrphanRange(BSONObj 
     return _metadataManager->getNextOrphanRange(from);
 }
 
+
+bool CollectionShardingState::isDocumentInMigratingChunk(OperationContext* txn,
+                                                         const BSONObj& doc) {
+    dassert(txn->lockState()->isCollectionLockedForMode(_nss.ns(), MODE_IX));
+
+    if (_sourceMgr) {
+        return _sourceMgr->getCloner()->isDocumentInMigratingChunk(txn, doc);
+    }
+
+    return false;
+}
+
 void CollectionShardingState::onInsertOp(OperationContext* opCtx,
                                          const BSONObj& insertedDoc,
                                          const repl::OpTime& opTime) {

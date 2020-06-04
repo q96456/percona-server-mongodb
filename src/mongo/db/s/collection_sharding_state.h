@@ -196,6 +196,8 @@ public:
      */
     bool collectionIsSharded();
 
+    bool isDocumentInMigratingChunk(OperationContext* txn, const BSONObj& doc);
+
     /**
      * Tracks deletion of any documents within the range, returning when deletion is complete.
      * Throws if the collection is dropped while it sleeps.
