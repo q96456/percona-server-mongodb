@@ -42,6 +42,12 @@ void OpObserverNoop::onCreateIndex(
 
 void OpObserverNoop::aboutToInserts(OperationContext*,
                                     const NamespaceString&,
+                                    std::vector<InsertStatement>::const_iterator,
+                                    std::vector<InsertStatement>::const_iterator,
+                                    bool) {}
+
+void OpObserverNoop::aboutToInserts(OperationContext*,
+                                    const NamespaceString&,
                                     std::vector<BSONObj>::const_iterator,
                                     std::vector<BSONObj>::const_iterator,
                                     bool) {}

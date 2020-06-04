@@ -99,9 +99,15 @@ public:
 
     virtual void aboutToInserts(OperationContext* txn,
                                 const NamespaceString& ns,
+                                std::vector<InsertStatement>::const_iterator begin,
+                                std::vector<InsertStatement>::const_iterator end,
+                                bool fromMigrate) = 0;
+    virtual void aboutToInserts(OperationContext* txn,
+                                const NamespaceString& ns,
                                 std::vector<BSONObj>::const_iterator begin,
                                 std::vector<BSONObj>::const_iterator end,
                                 bool fromMigrate) = 0;
+
     virtual void onInserts(OperationContext* opCtx,
                            const NamespaceString& nss,
                            OptionalCollectionUUID uuid,

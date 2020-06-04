@@ -47,6 +47,11 @@ public:
 
     void aboutToInserts(OperationContext* txn,
                         const NamespaceString& ns,
+                        std::vector<InsertStatement>::const_iterator begin,
+                        std::vector<InsertStatement>::const_iterator end,
+                        bool fromMigrate) override;
+    void aboutToInserts(OperationContext* txn,
+                        const NamespaceString& ns,
                         std::vector<BSONObj>::const_iterator begin,
                         std::vector<BSONObj>::const_iterator end,
                         bool fromMigrate) override;

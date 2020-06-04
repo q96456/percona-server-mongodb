@@ -365,7 +365,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
         if (!status.isOK())
             return status;
     }
-    getGlobalServiceContext()->getOpObserver()->aboutToInserts(txn, ns(), begin, end, fromMigrate);
+    getGlobalServiceContext()->getOpObserver()->aboutToInserts(opCtx, ns(), begin, end, fromMigrate);
 
     const SnapshotId sid = opCtx->recoveryUnit()->getSnapshotId();
 
@@ -410,7 +410,7 @@ Status CollectionImpl::insertDocument(OperationContext* opCtx,
         }
     }
 
-    dassert(txn->lockState()->isCollectionLockedForMode(ns().toString(), MODE_IX));
+    dassert(opCtx->lockState()->isCollectionLockedForMode(ns().toString(), MODE_IX));
 
     {
         auto status = checkValidation(opCtx, doc);
@@ -422,7 +422,7 @@ Status CollectionImpl::insertDocument(OperationContext* opCtx,
     docs.push_back(doc);
 
     getGlobalServiceContext()->getOpObserver()->aboutToInserts(
-        txn, ns(), docs.begin(), docs.end(), false);
+        opCtx, ns(), docs.begin(), docs.end(), false);
 
 
     // TODO SERVER-30638: using timestamp 0 for these inserts, which are non-oplog so we don't yet
