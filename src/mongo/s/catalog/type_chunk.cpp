@@ -111,7 +111,7 @@ void ChunkRange::append(BSONObjBuilder* builder) const {
 }
 
 std::string ChunkRange::toString() const {
-    return str::stream() << "[" << _minKey << ", " << _maxKey << ")";
+    return str::stream() << "[" << _minKey << ", " << _maxKey << "]";
 }
 
 bool ChunkRange::operator==(const ChunkRange& other) const {

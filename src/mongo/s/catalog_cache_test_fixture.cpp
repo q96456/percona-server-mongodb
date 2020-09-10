@@ -86,7 +86,7 @@ void CatalogCacheTestFixture::setupNShards(int numShards) {
     }());
 }
 
-std::shared_ptr<ChunkManager> CatalogCacheTestFixture::makeChunkManager(
+std::shared_ptr<ChunkManagerWithLock> CatalogCacheTestFixture::makeChunkManager(
     const NamespaceString& nss,
     const ShardKeyPattern& shardKeyPattern,
     std::unique_ptr<CollatorInterface> defaultCollator,

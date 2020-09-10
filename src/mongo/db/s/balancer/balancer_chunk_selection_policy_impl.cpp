@@ -46,7 +46,8 @@
 #include "mongo/stdx/memory.h"
 #include "mongo/util/log.h"
 #include "mongo/util/mongoutils/str.h"
-
+#include "mongo/s/chunk_manager.h"
+#include "mongo/s/chunk_manager_inlock.h"
 namespace mongo {
 
 using MigrateInfoVector = BalancerChunkSelectionPolicy::MigrateInfoVector;
@@ -62,7 +63,7 @@ namespace {
  * distribution and chunk placement information which is needed by the balancer policy.
  */
 StatusWith<DistributionStatus> createCollectionDistributionStatus(
-    OperationContext* opCtx, const ShardStatisticsVector& allShards, ChunkManager* chunkMgr) {
+    OperationContext* opCtx, const ShardStatisticsVector& allShards, ChunkManagerWithLock* chunkMgr) {
     ShardToChunksMap shardToChunksMap;
 
     // Makes sure there is an entry in shardToChunksMap for every shard, so empty shards will also

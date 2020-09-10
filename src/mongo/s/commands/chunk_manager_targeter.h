@@ -39,7 +39,7 @@
 
 namespace mongo {
 
-class ChunkManager;
+class ChunkManagerWithLock;
 class OperationContext;
 class Shard;
 struct ChunkVersion;

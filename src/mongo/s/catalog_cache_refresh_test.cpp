@@ -606,8 +606,50 @@ TEST_F(CatalogCacheRefreshTest, IncrementalLoadAfterMoveLastChunk) {
 
     ASSERT_EQ(1, cm->numChunks());
     ASSERT_EQ(version, cm->getVersion());
-    ASSERT_EQ(ChunkVersion(0, 0, version.epoch()), cm->getVersion({"0"}));
+    //ASSERT_EQ(ChunkVersion(0, 0, version.epoch()), cm->getVersion({"0"}));
     ASSERT_EQ(version, cm->getVersion({"1"}));
+}
+
+
+TEST_F(CatalogCacheRefreshTest, RefreshOuting) {
+    // const ShardKeyPattern shardKeyPattern(BSON("_id" << 1));
+    // std::vector<BSONObj>& splitPoints;
+    // for(int i =0; i < 10000000;i++){
+
+
+    // }
+
+    // auto initialRoutingInfo(makeChunkManager(kNss, shardKeyPattern, nullptr, true, {}));
+    // ASSERT_EQ(1, initialRoutingInfo->numChunks());
+
+    // setupNShards(2);
+
+    // ChunkVersion version = initialRoutingInfo->getVersion();
+
+    // auto future = scheduleRoutingInfoRefresh(kNss);
+
+    // expectGetCollection(version.epoch(), shardKeyPattern);
+
+    // // Return set of chunks, which represent a move
+    // expectFindOnConfigSendBSONObjVector([&]() {
+    //     version.incMajor();
+    //     ChunkType chunk1(kNss,
+    //                      {shardKeyPattern.getKeyPattern().globalMin(),
+    //                       shardKeyPattern.getKeyPattern().globalMax()},
+    //                      version,
+    //                      {"1"});
+
+    //     return std::vector<BSONObj>{chunk1.toBSON()};
+    // }());
+
+    // auto routingInfo = future.timed_get(kFutureTimeout);
+    // ASSERT(routingInfo->cm());
+    // auto cm = routingInfo->cm();
+
+    // ASSERT_EQ(1, cm->numChunks());
+    // ASSERT_EQ(version, cm->getVersion());
+    // ASSERT_EQ(ChunkVersion(0, 0, version.epoch()), cm->getVersion({"0"}));
+    // ASSERT_EQ(version, cm->getVersion({"1"}));
 }
 
 }  // namespace

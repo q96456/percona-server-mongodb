@@ -359,7 +359,9 @@ PlanExecutor::ExecState PlanExecutor::getNextSnapshotted(Snapshotted<BSONObj>* o
 }
 
 PlanExecutor::ExecState PlanExecutor::getNextImpl(Snapshotted<BSONObj>* objOut, RecordId* dlOut) {
-    MONGO_FAIL_POINT_BLOCK(planExecutorAlwaysDead, customKill) {
+    MONGO_FAIL_POINT_BLOCK(planExecutorAlwaysDead, customKill) 
+    //for (mongo::ScopedFailPoint customKill(&planExecutorAlwaysDead); MONGO_unlikely(customKill.isActive());)
+    {
         const BSONObj& data = customKill.getData();
         BSONElement customKillNS = data["namespace"];
         if (!customKillNS || _ns == customKillNS.str()) {

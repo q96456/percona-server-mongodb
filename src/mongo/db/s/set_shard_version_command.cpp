@@ -214,6 +214,8 @@ public:
                         result.append("ns", ns);
                         result.appendBool("need_authoritative", true);
                         errmsg = "verifying drop on '" + ns + "'";
+                        log()<<"verifying drop. requestedVersion="<<requestedVersion.toString()<<",collectionShardVersion="<<collectionShardVersion.toString()
+                        <<",nss="<<nss.toString();
                         return false;
                     }
                 }

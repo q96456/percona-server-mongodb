@@ -91,6 +91,7 @@ QueryAndSort createConfigDiffQuery(const NamespaceString& nss, ChunkVersion coll
 CollectionAndChangedChunks getChangedChunks(OperationContext* opCtx,
                                             const NamespaceString& nss,
                                             ChunkVersion sinceVersion) {
+    log()<< "start getChangedChunks";
     const auto catalogClient = Grid::get(opCtx)->catalogClient(opCtx);
 
     // Decide whether to do a full or partial load based on the state of the collection
@@ -148,10 +149,11 @@ std::shared_ptr<Notification<void>> ConfigServerCatalogCacheLoader::getChunksSin
     const NamespaceString& nss,
     ChunkVersion version,
     stdx::function<void(OperationContext*, StatusWith<CollectionAndChangedChunks>)> callbackFn) {
-
+    log()<<"getChunksSince";
     auto notify = std::make_shared<Notification<void>>();
 
     uassertStatusOK(_threadPool.schedule([ this, nss, version, notify, callbackFn ]() noexcept {
+        log()<<"thread pool exec schedule";
         auto opCtx = Client::getCurrent()->makeOperationContext();
 
         auto swCollAndChunks = [&]() -> StatusWith<CollectionAndChangedChunks> {
@@ -161,7 +163,7 @@ std::shared_ptr<Notification<void>> ConfigServerCatalogCacheLoader::getChunksSin
                 return ex.toStatus();
             }
         }();
-
+        log()<<"start callback";
         callbackFn(opCtx.get(), std::move(swCollAndChunks));
         notify->set();
     }));
