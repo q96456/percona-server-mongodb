@@ -132,9 +132,7 @@ public:
         return _unique;
     }
 
-    ChunkVersion getVersion() const {
-        return _collectionVersion;
-    }
+    ChunkVersion getVersion() const;
 
     ChunkVersion getVersion(const ShardId& shardId) const;
 
@@ -235,7 +233,7 @@ private:
 
     // The shard versioning mechanism hinges on keeping track of the number of times we reload
     // ChunkManagers.
-    const unsigned long long _sequenceNumber;
+    unsigned long long _sequenceNumber;
 
     // Namespace to which this routing information corresponds
     const NamespaceString _nss;

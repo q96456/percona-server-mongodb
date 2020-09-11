@@ -397,7 +397,7 @@ ChunkVersion ChunkManagerWithLock::getVersion(const ShardId& shardName) const {
         // have a version of (0, 0, epoch)
         return ChunkVersion(0, 0, _collectionVersion.epoch());
     }
-
+    log()<<"getVersion by shardname = "<<shardName<<",chunkversion="<<it->second.toString();
     return it->second;
 }
 
@@ -666,9 +666,21 @@ void ChunkManagerWithLock::UpdateChunksMap(const std::vector<ChunkType>& changed
     }
 
     boost::unique_lock<boost::shared_mutex> lock(_mutex);
+
     _shardVersionSize = _shardVersions.size();
-    _collectionVersion = collectionVersion;
+    if(_collectionVersion == collectionVersion){
+        //这里不用处理
+    }else{
+        _sequenceNumber = nextCMILSequenceNumber.addAndFetch(1);
+    }
+     _collectionVersion = collectionVersion;
    
     log() << "UpdateChunksMap time=" << timer.millis() << "ms";
 }
+
+
+    ChunkVersion ChunkManagerWithLock::getVersion() const {
+        log()<<"chunk_manager_version"<<_collectionVersion.toString();
+        return _collectionVersion;
+    }
 }  // namespace mongo
