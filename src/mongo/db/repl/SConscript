@@ -409,6 +409,7 @@ env.Library('repl_coordinator_impl',
                 'replication_coordinator_impl_elect_v1.cpp',
                 'replication_coordinator_impl_heartbeat.cpp',
                 'vote_requester.cpp',
+		'disk_check.cpp',
             ],
             LIBDEPS=[
                      '$BUILD_DIR/mongo/db/common',

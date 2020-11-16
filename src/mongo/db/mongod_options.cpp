@@ -520,6 +520,8 @@ Status addMongodOptions(moe::OptionSection* options) {
         .hidden()
         .setSources(moe::SourceYAMLConfig);
 
+    
+
 
     options->addSection(general_options);
 #if defined(_WIN32)
@@ -579,6 +581,10 @@ Status addMongodOptions(moe::OptionSection* options) {
     options->addOptionChaining("opIdMem", "opIdMem", moe::Switch, "DEPRECATED")
         .hidden()
         .setSources(moe::SourceAllLegacy);
+    
+    //lixin
+    options->addOptionChaining(
+            "autoRefreshRoutingNameSpace", "autoRefreshRoutingNameSpace", moe::String, "secondary auto refresh routing namespace");
 
     return Status::OK();
 }
@@ -1024,6 +1030,11 @@ Status storeMongodOptions(const moe::Environment& params) {
             storageGlobalParams.dbpath = serverGlobalParams.cwd + "/" + storageGlobalParams.dbpath;
         }
     }
+    if(storageGlobalParams.dbpath != ""){
+        if(!storageGlobalParams.diskChecker.init(storageGlobalParams.dbpath)){
+            log()<<"init diskchecker error.";
+        }
+    }
 #ifdef _WIN32
     if (storageGlobalParams.dbpath.size() > 1 &&
         storageGlobalParams.dbpath[storageGlobalParams.dbpath.size() - 1] == '/') {
@@ -1356,6 +1367,11 @@ Status storeMongodOptions(const moe::Environment& params) {
         return Status(ErrorCodes::BadValue,
                       str::stream() << "Can not specify " << clusterRoleStr
                                     << " and set skipShardingConfigurationChecks=true");
+    }
+
+    //lixin 
+    if (params.count("autoRefreshRoutingNameSpace")) {
+        mongodGlobalParams.autoRefreshRoutingNameSpace = params["autoRefreshRoutingNameSpace"].as<std::string>();
     }
 
     setGlobalReplSettings(replSettings);

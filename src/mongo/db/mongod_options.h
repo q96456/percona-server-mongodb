@@ -46,6 +46,7 @@ namespace moe = mongo::optionenvironment;
 
 struct MongodGlobalParams {
     bool scriptingEnabled;  // --noscripting
+    std::string autoRefreshRoutingNameSpace; // --autoRefreshRoutingNameSpace
 
     MongodGlobalParams() : scriptingEnabled(true) {}
 };

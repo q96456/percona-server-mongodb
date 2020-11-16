@@ -32,6 +32,7 @@
 #include <string>
 
 #include "mongo/platform/atomic_proxy.h"
+#include "mongo/db/repl/disk_check.h"
 
 /*
  * This file defines the storage for options that come from the command line related to data file
@@ -101,6 +102,13 @@ struct StorageGlobalParams {
     AtomicDouble syncdelay{60.0};  // seconds between fsyncs
 
     bool readOnly = false;
+
+    //--autoRefreshRoutingNameSpace
+    //自动刷新路由的namespace名，db.collection结构
+    std::string autoRefreshRoutingNameSpace;
+
+    //磁盘检查
+    repl::DiskChecker diskChecker;
 };
 
 extern StorageGlobalParams storageGlobalParams;
