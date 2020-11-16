@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-11-11 15:47:11
- * @LastEditTime: 2020-11-12 15:24:42
+ * @LastEditTime: 2020-11-16 14:43:24
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /percona-server-mongodb/src/mongo/db/repl/disk_check.cpp
@@ -48,7 +48,7 @@ void DiskChecker::checkDisk() {
     while (true) {
         ssize_t bytesWrittenInWrite = write(_fd, &write_info, 1);
         if (bytesWrittenInWrite == -1) {
-            auto err = errno;
+            //auto err = errno;
             if (err == EINTR) {
                 continue;
             }
@@ -64,7 +64,7 @@ void DiskChecker::checkDisk() {
         }
 
         if (fsync(_fd)) {
-            auto err = errno;
+            //auto err = errno;
             log()<<"disk check  fsync err="<<err;
             // LOGV2_FATAL_CONTINUE(
             //     23426,
