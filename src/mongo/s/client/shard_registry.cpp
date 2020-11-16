@@ -58,7 +58,7 @@
 #include "mongo/util/map_util.h"
 #include "mongo/util/mongoutils/str.h"
 #include "mongo/util/scopeguard.h"
-#include "mongo/db/s/auto_refresh_routing.h"
+
 
 namespace mongo {
 
@@ -190,7 +190,7 @@ void ShardRegistry::init() {
 void ShardRegistry::startup() {
     // startup() must be called only once
     invariant(!_executor);
-    static AutoRefreshRouting task = AutoRefreshRouting(0);
+
     // construct task executor
     auto net = executor::makeNetworkInterface("ShardRegistryUpdater");
     auto netPtr = net.get();

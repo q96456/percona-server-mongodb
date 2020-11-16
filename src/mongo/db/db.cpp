@@ -145,6 +145,7 @@
 #include "mongo/util/text.h"
 #include "mongo/util/time_support.h"
 #include "mongo/util/version.h"
+#include "mongo/db/s/auto_refresh_routing.h"
 
 #ifdef MONGO_CONFIG_SSL
 #include "mongo/util/net/ssl_options.h"
@@ -772,6 +773,7 @@ ExitCode _initAndListen(int listenPort) {
                             ->initializeShardingAwarenessIfNeeded(startupOpCtx.get()));
     if (shardingInitialized) {
         reloadShardRegistryUntilSuccess(startupOpCtx.get());
+        static AutoRefreshRouting task = AutoRefreshRouting(0);
     }
 
     if (!storageGlobalParams.readOnly) {
