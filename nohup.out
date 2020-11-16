@@ -1,5 +1,0 @@
-2020-11-06T11:20:00.901+0800 I CONTROL  [main] log file "/Users/xinli/mongodb_dir/shard3_1/log" exists; moved to "/Users/xinli/mongodb_dir/shard3_1/log.2020-11-06T03-20-00".
-2020-11-06T11:35:06.024+0800 I CONTROL  [main] log file "/Users/xinli/mongodb_dir/shard3_1/log" exists; moved to "/Users/xinli/mongodb_dir/shard3_1/log.2020-11-06T03-35-06".
-2020-11-06T11:47:39.549+0800 I CONTROL  [main] log file "/Users/xinli/mongodb_dir/shard3_1/log" exists; moved to "/Users/xinli/mongodb_dir/shard3_1/log.2020-11-06T03-47-39".
-2020-11-06T17:01:08.182+0800 I CONTROL  [main] log file "/Users/xinli/mongodb_dir/shard3_1/log" exists; moved to "/Users/xinli/mongodb_dir/shard3_1/log.2020-11-06T09-01-08".
-2020-11-06T17:16:52.960+0800 I CONTROL  [main] log file "/Users/xinli/mongodb_dir/shard3_1/log" exists; moved to "/Users/xinli/mongodb_dir/shard3_1/log.2020-11-06T09-16-52".
