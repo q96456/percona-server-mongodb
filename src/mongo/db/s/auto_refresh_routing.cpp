@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-09-03 17:28:23
- * @LastEditTime: 2020-11-17 18:32:07
+ * @LastEditTime: 2020-11-27 14:23:46
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /percona-server-mongodb/src/mongo/util/net/ssl_expiration.cpp
@@ -100,8 +100,7 @@ void AutoRefreshRouting::taskDoWork() {
         }
 
         std::vector<std::string> collectionNames;
-        int collectionsCount = 0;
-        const auto& collectionDocsOpTimePair = findStatus.getValue();
+        const auto& collectionDocsOpTimePair = findSatus.getValue();
         for (const BSONObj& obj : collectionDocsOpTimePair.docs) {
             BSONElement e = obj.getField("_id");
             auto nameSpace = e.str();
