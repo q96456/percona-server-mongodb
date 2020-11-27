@@ -825,7 +825,7 @@ Status TopologyCoordinatorImpl::prepareHeartbeatResponseV1(Date_t now,
 
     if (myState.primary()) {
         response->setElectionTime(_electionTime);
-        storageGlobalParams.diskChecker.checkDisk();
+        //storageGlobalParams.diskChecker.checkDisk();
     }
 
     response->setAppliedOpTime(lastOpApplied);

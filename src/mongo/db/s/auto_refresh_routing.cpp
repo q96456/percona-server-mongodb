@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-09-03 17:28:23
- * @LastEditTime: 2020-11-12 16:13:01
+ * @LastEditTime: 2020-11-17 18:32:07
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /percona-server-mongodb/src/mongo/util/net/ssl_expiration.cpp
@@ -36,6 +36,7 @@
 #define MONGO_LOG_DEFAULT_COMPONENT ::mongo::logger::LogComponent::kControl
 #include <random>
 #include <string>
+#include <vector>
 #include "mongo/db/s/auto_refresh_routing.h"
 #include "mongo/db/repl/replication_coordinator.h"
 #include "mongo/db/repl/replication_coordinator_global.h"
@@ -45,14 +46,17 @@
 #include "mongo/db/namespace_string.h"
 #include "mongo/s/grid.h"
 #include "mongo/s/catalog_cache.h"
+#include "mongo/s/client/shard_registry.h"
 #include "mongo/db/server_parameters.h"
 #include "mongo/db/mongod_options.h"
+#include "mongo/bson/bsonobj.h"
+#include "mongo/bson/bsonelement.h"
 namespace mongo {
 
 AutoRefreshRouting::AutoRefreshRouting(uint64_t start)
     : _autoRefreshRoutingNameSpace(mongodGlobalParams.autoRefreshRoutingNameSpace) {
         std::default_random_engine random(time(NULL));
-        std::uniform_int_distribution<int> r1(1,120);//避免批量启动secondary mongod 同时拉取chunks configsvr压力大
+        std::uniform_int_distribution<int> r1(60,240);//避免批量启动secondary mongod 同时拉取chunks configsvr压力大
         _nextRefreshTime = start + r1(random);
         log()<<"autoRefreshRoutingNameSpace="<< _autoRefreshRoutingNameSpace;
     }
@@ -64,9 +68,9 @@ std::string AutoRefreshRouting::taskName() const {
         
 void AutoRefreshRouting::taskDoWork() {
     //没有指定db.collection  跳过
-    if(_autoRefreshRoutingNameSpace == ""){
-        return;
-    }
+    // if(_autoRefreshRoutingNameSpace == ""){
+    //     return;
+    // }
     
     repl::ReplicationCoordinator* replCoord = repl::getGlobalReplicationCoordinator();
     if(!replCoord->getMemberState().secondary()){ // 非secondary跳过
@@ -74,11 +78,46 @@ void AutoRefreshRouting::taskDoWork() {
     }
 
     auto now  = time(NULL);
+        
     if((uint64_t)now > _nextRefreshTime){
-         Client::initThreadIfNotAlready("auto-refresh-routing");
-         auto txnPtr = cc().makeOperationContext();
-         OperationContext& txn = *txnPtr;
-         Grid::get(&txn)->catalogCache()->getShardedCollectionRoutingInfoWithRefresh(&txn, _autoRefreshRoutingNameSpace);
+        Client::initThreadIfNotAlready("auto-refresh-routing");
+        auto txnPtr = cc().makeOperationContext();
+        OperationContext& txn = *txnPtr;
+
+
+        auto findStatus = Grid::get(&txn)->shardRegistry()->getConfigShard()->exhaustiveFindOnConfig(
+        &txn,
+        ReadPreferenceSetting{ReadPreference::PrimaryOnly},
+        repl::ReadConcernLevel::kMajorityReadConcern,
+        NamespaceString(CollectionType::ConfigNS),
+        BSONObj(),
+        BSONObj(),
+        boost::none /* no limit */);
+
+        if (!findStatus.isOK()) {
+            log()<<"query collecions from configsvr fail."<<findStatus.getStatus().reason();
+            return;
+        }
+
+        std::vector<std::string> collectionNames;
+        int collectionsCount = 0;
+        const auto& collectionDocsOpTimePair = findStatus.getValue();
+        for (const BSONObj& obj : collectionDocsOpTimePair.docs) {
+            BSONElement e = obj.getField("_id");
+            auto nameSpace = e.str();
+            collectionNames.push_back(nameSpace);
+        }
+
+        if(!replCoord->getMemberState().secondary()){ // 非secondary跳过,二次校验，避免拉collections过程中发送变更
+            return;
+        }
+        
+        for(auto itr : collectionNames){
+            log()<<"need refresh collection = "<<itr;
+            Grid::get(&txn)->catalogCache()->getShardedCollectionRoutingInfoWithRefresh(&txn, itr);
+        }
+
+        // Grid::get(&txn)->catalogCache()->getShardedCollectionRoutingInfoWithRefresh(&txn, _autoRefreshRoutingNameSpace);
 
          std::default_random_engine random(now);
          std::uniform_int_distribution<int> r1(80000,86400);

@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-11-11 15:47:11
- * @LastEditTime: 2020-11-16 15:13:57
+ * @LastEditTime: 2020-11-23 17:05:39
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /percona-server-mongodb/src/mongo/db/repl/disk_check.cpp
@@ -25,16 +25,14 @@ DiskChecker::DiskChecker(){}
 DiskChecker::~DiskChecker(){
      if (close(_fd)) {
         //auto err = errno;
-        //fassertNoTrace(4084, err == 0);
     }
     
 }
 bool DiskChecker::init(std::string db_path) {
-     _db_path = db_path + "/checker";
-    _fd = open(_db_path.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IWUSR);
+    _db_path = db_path + "/checker";
+    _fd = open(_db_path.c_str(), O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
     if (_fd == -1) {
         //auto err = errno;
-        //fassertNoTrace(4080, err == 0);
         return false;
     }
 
@@ -59,8 +57,6 @@ void DiskChecker::checkDisk() {
             //     23425,
             //     "write failed for '{file_generic_string}' with error: {errnoWithDescription_err}",
             //     "file_generic_string"_attr = file.generic_string(),
-            //     "errnoWithDescription_err"_attr = errnoWithDescription(err));
-            // fassertNoTrace(4081, err == 0);
         }
 
         if (fsync(_fd)) {
@@ -71,7 +67,6 @@ void DiskChecker::checkDisk() {
             //     "fsync failed for '{file_generic_string}' with error: {errnoWithDescription_err}",
             //     "file_generic_string"_attr = file.generic_string(),
             //     "errnoWithDescription_err"_attr = errnoWithDescription(err));
-            // fassertNoTrace(4082, err == 0);
         }
 
         if (timer.millis() > 100){

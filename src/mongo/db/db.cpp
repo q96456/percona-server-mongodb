@@ -146,7 +146,7 @@
 #include "mongo/util/time_support.h"
 #include "mongo/util/version.h"
 #include "mongo/db/s/auto_refresh_routing.h"
-
+#include "mongo/db/watchdog_mongod.h"
 #ifdef MONGO_CONFIG_SSL
 #include "mongo/util/net/ssl_options.h"
 #endif
@@ -690,6 +690,8 @@ ExitCode _initAndListen(int listenPort) {
     if (mmapv1GlobalOptions.journalOptions & MMAPV1Options::JournalRecoverOnly)
         return EXIT_NET_ERROR;
 
+
+    startWatchdog(globalServiceContext);
     if (mongodGlobalParams.scriptingEnabled) {
         ScriptEngine::setup();
     }
