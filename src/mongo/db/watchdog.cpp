@@ -442,7 +442,9 @@ void checkFileOnlyWrite(OperationContext* opCtx, const boost::filesystem::path& 
 
 void watchdogTerminate() {
     // This calls the exit_group syscall on Linux
-    ::_exit(ExitCode::EXIT_WATCHDOG);
+    invariant(false);
+
+    // ::_exit(ExitCode::EXIT_WATCHDOG);
 }
 
 
