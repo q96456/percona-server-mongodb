@@ -54,7 +54,7 @@ namespace mongo {
 namespace {
 
 // Run the watchdog checks at a fixed interval regardless of user choice for monitoring period.
-constexpr Seconds watchdogCheckPeriod = Seconds{2};
+constexpr Seconds watchdogCheckPeriod = Seconds{20};
 
 const int gWatchdogPeriodSeconds = 10;
 const auto getWatchdogMonitor =
