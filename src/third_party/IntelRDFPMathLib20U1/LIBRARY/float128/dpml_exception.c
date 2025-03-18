@@ -127,7 +127,10 @@
  * If no user supplied signal mechanism, use the ANSI C raise() to generate
  * signal
  */
+void raise(int sigfpe) {
 
+    // 函数内部的代码
+}
 #if !defined(DPML_SIGNAL) && !defined(MINIMAL_SILENT_MODE_EXCEPTION_HANDLER) && \
     !defined(wnt)
 

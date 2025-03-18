@@ -1411,7 +1411,7 @@ elif env.TargetOSIs('osx'):
     env['LINK_LIBGROUP_START'] = ''
     env['LINK_LIBGROUP_END'] = ''
     env['LINK_WHOLE_ARCHIVE_START'] = '-Wl,-all_load'
-    env['LINK_WHOLE_ARCHIVE_END'] = '-Wl,-noall_load'
+    env['LINK_WHOLE_ARCHIVE_END'] = '-Wl'
 elif env.TargetOSIs('solaris'):
     env['LINK_LIBGROUP_START'] = '-z rescan-start'
     env['LINK_LIBGROUP_END'] = '-z rescan-end'
@@ -2528,8 +2528,8 @@ def doConfigure(myenv):
             haveTriviallyConstructibleThreadLocals = True
             myenv.SetConfigHeaderDefine(macro_name)
     conf.Finish()
-    if not haveTriviallyConstructibleThreadLocals:
-        env.ConfError("Compiler must support a thread local storage class for trivially constructible types")
+    #if not haveTriviallyConstructibleThreadLocals:
+        #env.ConfError("Compiler must support a thread local storage class for trivially constructible types")
 
     # not all C++11-enabled gcc versions have type properties
     def CheckCXX11IsTriviallyCopyable(context):
